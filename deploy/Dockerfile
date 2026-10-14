@@ -17,3 +17,12 @@ COPY . .
 RUN npm run typecheck && npm run build && test -f dist/remoteEntry.js
 # Annex H, checked on the COMPILED code: a portal does not know where the gateway is and does not handle a token.
 RUN ! grep -rEl "localhost:8000|Authorization|Bearer" dist
+
+# What ships: static files behind nginx, and nothing from node_modules. It is the LAST stage, so a plain
+# `docker build` produces this one.
+FROM nginx:1.27-alpine AS serve
+COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
+COPY deploy/portal-headers.conf /etc/nginx/snippets/portal-headers.conf
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 4202
+HEALTHCHECK --interval=10s --timeout=3s --retries=3 CMD wget -qO- http://127.0.0.1:4202/health || exit 1
