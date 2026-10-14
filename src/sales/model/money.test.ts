@@ -20,11 +20,11 @@ describe('money in the cart is exact: whole pesos, summed as integers', () => {
   });
 
   it('writes pesos the way the shop does: a symbol, and a dot for every thousand', () => {
-    expect(formatPesos(0n)).toBe('$ 0');
-    expect(formatPesos(999n)).toBe('$ 999');
-    expect(formatPesos(8_500n)).toBe('$ 8.500');
-    expect(formatPesos(403_500n)).toBe('$ 403.500');
-    expect(formatPesos(1_234_567n)).toBe('$ 1.234.567');
-    expect(formatPesos(450_359_962_737_049_550n)).toBe('$ 450.359.962.737.049.550');
+    expect(formatPesos(0n)).toBe('$\u00a00');
+    expect(formatPesos(999n)).toBe('$\u00a0999');
+    expect(formatPesos(8_500n)).toBe('$\u00a08.500');
+    expect(formatPesos(403_500n)).toBe('$\u00a0403.500');
+    expect(formatPesos(1_234_567n)).toBe('$\u00a01.234.567');
+    expect(formatPesos(450_359_962_737_049_550n)).toBe('$\u00a0450.359.962.737.049.550');
   });
 });
