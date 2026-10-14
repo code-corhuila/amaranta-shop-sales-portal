@@ -15,3 +15,8 @@ export function RequireRole({ role, children }: { role: string; children: ReactN
   if (authState.role !== role) return <p role="alert">No tienes permiso para ver esta sección.</p>;
   return <>{children}</>;
 }
+
+export function RequireAuth({ children }: { children: ReactNode }) {
+  if (!authState.signedIn) return <p role="alert">Inicia sesión para continuar.</p>;
+  return <>{children}</>;
+}
