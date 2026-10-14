@@ -39,6 +39,8 @@ declare module 'shell/auth' {
 
   export function useSessionInfo(): SessionInfo;
   export function RequireRole(props: { readonly role: string; readonly children: ReactNode }): ReactNode;
+  /** Sends a visitor to the sign-in and brings them back here once they have a session. */
+  export function RequireAuth(props: { readonly children: ReactNode }): ReactNode;
 }
 
 // The cart the shell keeps for every portal: this portal adds to it and the sales portal buys from it. It holds what a person
