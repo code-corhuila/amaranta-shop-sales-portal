@@ -15,7 +15,7 @@ export function cartTotal(lines: readonly Priced[]): bigint {
   return lines.reduce((sum, line) => sum + lineSubtotal(line), 0n);
 }
 
-/** Pesos the way the shop writes them: a symbol, and a dot for every thousand ("$ 403.500"). */
+/** Pesos the way the services write them: a symbol, a non-breaking space and a dot for every thousand ("$\u00a0403.500"), so an amount never breaks across lines. */
 export function formatPesos(pesos: bigint): string {
-  return `$ ${pesos.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
+  return `$\u00a0${pesos.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
 }
