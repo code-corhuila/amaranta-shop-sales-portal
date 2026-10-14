@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom';
 import { RequireAuth } from 'shell/auth';
+import './sales/sales.css';
 import { CartPage } from './sales/pages/CartPage';
 import { CheckoutPage } from './sales/pages/CheckoutPage';
 import { ConfirmationPage } from './sales/pages/ConfirmationPage';
