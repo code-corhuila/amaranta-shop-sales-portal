@@ -1,0 +1,18 @@
+# The sales portal only. amaranta-shop-infra-postgres includes this file to compose the platform.
+# The browser loads it through the shell (amaranta-shop-front), never directly.
+name: amaranta-shop-sales-portal
+
+services:
+  sales-portal:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      target: serve
+    ports: ["4202:4202"]
+    restart: unless-stopped
+    networks: [platform]
+
+networks:
+  platform:
+    name: platform
+    external: true
