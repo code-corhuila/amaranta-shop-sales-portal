@@ -1,14 +1,16 @@
 import { Link } from 'react-router-dom';
 import { MAX_QUANTITY, useCart } from 'shell/cart';
+import { Stepper } from '../components/Stepper';
 import { CATALOG_PATH } from '../links';
 import { cartTotal, formatPesos, lineSubtotal } from '../model/money';
 
-/** What the person chose, before placing the order. The cart is the shell's; this only shows it and changes it. */
+/** What the person chose, before placing the order: the first step of the wizard. The cart is the shell's; this only shows it and changes it. */
 export function CartPage() {
   const { items, setQuantity, remove } = useCart();
 
   return (
-    <section>
+    <section className="wizard">
+      <Stepper current={1} />
       <h2>Tu carrito</h2>
 
       {items.length === 0 ? (
