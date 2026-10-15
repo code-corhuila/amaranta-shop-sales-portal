@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSessionInfo } from 'shell/auth';
 import { useCart } from 'shell/cart';
 import { placeOrder } from '../api/ordersApi';
+import { Stepper } from '../components/Stepper';
 import { useIdempotencyKey } from '../hooks/useIdempotencyKey';
 import { CATALOG_PATH } from '../links';
 import { checkoutIssues, emptyCheckoutForm, fingerprint, validateCheckout, type CheckoutErrors, type CheckoutField, type CheckoutValues } from '../model/checkoutForm';
@@ -161,7 +162,8 @@ export function CheckoutPage() {
   const delivery = values.fulfillmentMethod === 'DELIVERY';
 
   return (
-    <section>
+    <section className="wizard">
+      <Stepper current={2} />
       <h2>Confirma tu pedido</h2>
       <p>
         <Link to="../cart">Volver al carrito</Link>

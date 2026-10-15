@@ -11,7 +11,7 @@ const SHELL_TOKENS = new Set([
   '--color-ocean-50', '--color-ocean-100', '--color-ocean-200', '--color-ocean-600', '--color-ocean-700',
   '--color-cream-50', '--color-cream-100', '--color-ink-900', '--color-ink-muted',
   '--font-family-display', '--font-family-sans',
-  '--radius-lg', '--radius-xl2', '--radius-full', '--shadow-card',
+  '--radius-lg', '--radius-xl2', '--radius-full', '--shadow-card', '--shadow-lift', '--shadow-wizard', '--gradient-primary',
   '--surface', '--field-border', '--field-error', '--alert-success-bg', '--alert-success-text', '--alert-success-border',
 ]);
 
