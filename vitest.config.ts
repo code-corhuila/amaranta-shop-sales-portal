@@ -1,5 +1,6 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
+import { fileURLToPath } from 'node:url';
 
 // Tests do not load Module Federation: `shell/apiClient` is replaced by a stub, and a test says what each request answers.
 export default defineConfig({
@@ -7,9 +8,9 @@ export default defineConfig({
   resolve: {
     // Tests run in a Linux container, where the path of the URL is the path of the file.
     alias: {
-      'shell/apiClient': new URL('./src/test/shellStub.ts', import.meta.url).pathname,
-      'shell/auth': new URL('./src/test/shellAuthStub.tsx', import.meta.url).pathname,
-      'shell/cart': new URL('./src/test/shellCartStub.ts', import.meta.url).pathname,
+      'shell/apiClient': fileURLToPath(new URL('./src/test/shellStub.ts', import.meta.url)),
+      'shell/auth': fileURLToPath(new URL('./src/test/shellAuthStub.tsx', import.meta.url)),
+      'shell/cart': fileURLToPath(new URL('./src/test/shellCartStub.ts', import.meta.url)),
     },
   },
   test: {
