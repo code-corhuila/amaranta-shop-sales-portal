@@ -1,2 +1,10 @@
 # Shell scripts run inside Linux containers: never let Git convert them to CRLF.
 *.sh text eol=lf
+# Everything that is copied into a Linux container keeps LF, including the lock file `npm ci` reads.
+*.ts text eol=lf
+*.tsx text eol=lf
+*.json text eol=lf
+*.html text eol=lf
+*.conf text eol=lf
+*.yml text eol=lf
+Dockerfile text eol=lf
