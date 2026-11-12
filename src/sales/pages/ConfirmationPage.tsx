@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useSessionInfo } from 'shell/auth';
+import { Stepper } from '../components/Stepper';
 import { CATALOG_PATH } from '../links';
 import { formatWhen } from '../model/dates';
 import { fulfillmentLabel, paymentLabel, statusLabel } from '../model/labels';
@@ -43,7 +44,11 @@ export function ConfirmationPage() {
 
   const { order, replayed } = confirmed;
   return (
-    <section className="confirmation">
+    <section className="confirmation wizard">
+      <Stepper current={3} />
+      <div className="confirmation-badge" aria-hidden="true">
+        ✓
+      </div>
       <h2>Pedido recibido</h2>
       {replayed && (
         <p role="status" className="notice-success">
