@@ -68,7 +68,7 @@
   margin: 0;
   min-width: 6rem;
   text-align: right;
-  color: var(--color-ember-700);
+  color: var(--brand-700);
   font-family: var(--font-family-display);
   font-weight: 600;
 }
@@ -170,12 +170,12 @@
 .choice-card input {
   width: auto;
   margin: 0;
-  accent-color: var(--color-ember-500);
+  accent-color: var(--brand-500);
 }
 
 .choice-card:has(input:checked) {
-  border-color: var(--color-ember-400);
-  background: var(--color-ember-50);
+  border-color: var(--brand-400);
+  background: var(--brand-50);
 }
 
 .choice-card:has(input:focus-visible) {
@@ -363,7 +363,7 @@
 }
 
 .step-done .step-dot {
-  background: var(--color-ember-500);
+  background: var(--brand-500);
   color: var(--surface);
 }
 
@@ -375,7 +375,7 @@
 }
 
 .step-current {
-  color: var(--color-ember-700);
+  color: var(--brand-700);
   font-weight: 600;
 }
 
@@ -432,7 +432,7 @@
 
 .cart-total strong,
 .checkout-summary strong {
-  color: var(--color-ember-700);
+  color: var(--brand-700);
   font-family: var(--font-family-display);
   font-size: 1.5rem;
 }
@@ -453,7 +453,7 @@
 }
 
 .choice-card:has(input:checked) {
-  border-color: var(--color-ember-500);
+  border-color: var(--brand-500);
   box-shadow: var(--shadow-card);
   font-weight: 600;
 }
