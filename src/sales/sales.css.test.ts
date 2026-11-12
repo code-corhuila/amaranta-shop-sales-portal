@@ -7,6 +7,7 @@ import css from './sales.css?raw';
  * contract the portal relies on; a token the shell does not define would silently draw nothing.
  */
 const SHELL_TOKENS = new Set([
+  '--brand-50', '--brand-100', '--brand-200', '--brand-300', '--brand-400', '--brand-500', '--brand-600', '--brand-700',
   '--color-ember-50', '--color-ember-100', '--color-ember-200', '--color-ember-300', '--color-ember-400', '--color-ember-500', '--color-ember-600', '--color-ember-700',
   '--color-ocean-50', '--color-ocean-100', '--color-ocean-200', '--color-ocean-600', '--color-ocean-700',
   '--color-cream-50', '--color-cream-100', '--color-ink-900', '--color-ink-muted',
@@ -44,7 +45,7 @@ describe('the stylesheet of the portal', () => {
   });
 
   it('highlights the choice that is selected, the way the design system does for a radio inside a card', () => {
-    expect(rules).toMatch(/\.choice-card:has\(input:checked\)\s*\{[^}]*border-color:\s*var\(--color-ember-400\)/);
+    expect(rules).toMatch(/\.choice-card:has\(input:checked\)\s*\{[^}]*border-color:\s*var\(--brand-400\)/);
     expect(rules).toMatch(/\.choice-card:has\(input:focus-visible\)/);
   });
 
