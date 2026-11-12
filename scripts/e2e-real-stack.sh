@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # The whole system, REAL, with Docker only: PostgreSQL and the structure of sales-db (Flyway), MongoDB and the ten products of
-# catalog-db (Liquibase), sales-api, catalog-api, the gateway, the shell and the two portals. Nothing in it is a double.
+# catalog-db (Liquibase), sales-api, catalog-api, the gateway, the shell and the two portals, plus the identity the monolith
+# still owns (ADR-011, point 9) so that signing in and creating an account work. Nothing in it is a double.
 #
 #   bash scripts/e2e-real-stack.sh up              builds and starts everything, then prints the address to open
 #   bash scripts/e2e-real-stack.sh check           asserts, over HTTP, what the whole chain must do (once per `up`: it buys)
@@ -8,8 +9,9 @@
 #   bash scripts/e2e-real-stack.sh down            removes everything it created, the keys and the tokens included
 #
 # It needs the other repositories next to this one, or their paths in SALES_DB_DIR, SALES_API_DIR, CATALOG_DB_DIR, CATALOG_API_DIR,
-# GATEWAY_DIR, FRONT_DIR and CATALOG_PORTAL_DIR, checked out at the code to run. Only the PUBLIC half of a throwaway signing key
-# reaches the services; the key and two test tokens (ADMIN and CUSTOMER) stay in .stack/, which git ignores, and `down` deletes it.
+# GATEWAY_DIR, FRONT_DIR, CATALOG_PORTAL_DIR and MONOLITH_DIR (amaranta), checked out at the code to run. Only the PUBLIC half of a throwaway signing key
+# reaches the services; the private half goes only to identity. The key, two test tokens (ADMIN and CUSTOMER) and the password
+# of a demo administrator stay in .stack/, which git ignores, and `down` deletes it.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 # Git Bash on Windows must not rewrite the container paths given to docker, but openssl (a Windows program) does need
@@ -19,6 +21,8 @@ docker() { MSYS_NO_PATHCONV=1 command docker "$@"; }
 NET=amaranta-real-stack
 PG=real-postgres; MONGO=real-mongo; SALES=real-sales-api; CATALOG=real-catalog-api; GATEWAY=real-gateway
 SHELL_C=real-shell; CATALOG_PORTAL=real-catalog-portal; SALES_PORTAL=real-sales-portal
+IDENTITY=real-identity; IDENTITY_DB=real-identity-db   # accounts and sign-in: the monolith's identity module, with its own database
+DEMO_ADMIN=admin@amaranta.shop                          # staff accounts are never created from the web: this one is made here
 STATE=.stack
 ADMIN=amaranta_admin
 FOOD=399d2ea8-1ccb-4193-8255-1b51e331984d   # FOOD-001 Croquetas Adulto Salmon 15kg: the id the monolith issued, 24 units, 189000 pesos
@@ -30,10 +34,10 @@ sibling() { # sibling <VAR> <default relative path>: the directory as docker wan
 }
 
 down() {
-  docker rm -f "$PG" "$MONGO" "$SALES" "$CATALOG" "$GATEWAY" "$SHELL_C" "$CATALOG_PORTAL" "$SALES_PORTAL" > /dev/null 2>&1 || true
+  docker rm -f "$PG" "$MONGO" "$SALES" "$CATALOG" "$GATEWAY" "$SHELL_C" "$CATALOG_PORTAL" "$SALES_PORTAL" "$IDENTITY" "$IDENTITY_DB" > /dev/null 2>&1 || true
   docker network rm "$NET" > /dev/null 2>&1 || true
   # The images carry the tag :real, so building over an existing one would fail ("already exists") on Docker Desktop.
-  docker rmi catalog-db-liquibase:real catalog-api:real sales-api:real api-gateway:real shell:real catalog-portal:real sales-portal:real > /dev/null 2>&1 || true
+  docker rmi catalog-db-liquibase:real catalog-api:real sales-api:real api-gateway:real shell:real catalog-portal:real sales-portal:real identity:real > /dev/null 2>&1 || true
   rm -rf "$STATE"
 }
 
@@ -50,7 +54,7 @@ start_sales_api() { # start_sales_api <clock>: the shop's clock is fixed so that
 
 up() {
   down
-  local SALES_DB SALES_API CATALOG_DB CATALOG_API GW FRONT CATALOG_PORTAL_SRC
+  local SALES_DB SALES_API CATALOG_DB CATALOG_API GW FRONT CATALOG_PORTAL_SRC MONOLITH
   SALES_DB="$(sibling SALES_DB_DIR ../amaranta-shop-sales-db)"
   SALES_API="$(sibling SALES_API_DIR ../amaranta-shop-sales-api)"
   CATALOG_DB="$(sibling CATALOG_DB_DIR ../amaranta-shop-catalog-db)"
@@ -58,6 +62,7 @@ up() {
   GW="$(sibling GATEWAY_DIR ../amaranta-shop-api-gateway)"
   FRONT="$(sibling FRONT_DIR ../amaranta-shop-front)"
   CATALOG_PORTAL_SRC="$(sibling CATALOG_PORTAL_DIR ../amaranta-shop-catalog-portal)"
+  MONOLITH="$(sibling MONOLITH_DIR ../amaranta)"
   mkdir -p "$STATE"
 
   echo "== a signing key (only the public half goes to the services) and two test tokens"
@@ -106,19 +111,43 @@ up() {
   docker build -q -f "$FRONT/deploy/Dockerfile" -t shell:real "$FRONT" > /dev/null
   docker build -q -f "$CATALOG_PORTAL_SRC/deploy/Dockerfile" -t catalog-portal:real "$CATALOG_PORTAL_SRC" > /dev/null
   docker build -q -f deploy/Dockerfile -t sales-portal:real . > /dev/null
+  docker build -q -f "$MONOLITH/apps/api/Dockerfile" -t identity:real "$MONOLITH/apps/api" > /dev/null
   docker run -d --name "$CATALOG" --network "$NET" --network-alias catalog-api \
     -e "MONGODB_URI=mongodb://catalog_app:$CATALOG_PW@mongo:27017/catalog?authSource=catalog" -e "JWT_PUBLIC_KEY=$PUBLIC" catalog-api:real > /dev/null
+  # Identity: the accounts of the monolith in a PostgreSQL of their own, the PRIVATE key only here (ADR-009, ADR-011).
+  local IDENTITY_PW PRIVATE
+  IDENTITY_PW="$(openssl rand -hex 16)"
+  PRIVATE="$(awk '{printf "%s\\n", $0}' "$STATE/private.pem")"
+  docker run -d --name "$IDENTITY_DB" --network "$NET" --network-alias identity-db --tmpfs /var/lib/postgresql/data -e POSTGRES_DB=amaranta \
+    -e POSTGRES_USER=amaranta -e POSTGRES_PASSWORD="$IDENTITY_PW" postgres:16-alpine > /dev/null
+  until docker exec "$IDENTITY_DB" pg_isready -h 127.0.0.1 -U amaranta -d amaranta > /dev/null 2>&1; do sleep 1; done
+  for sql in "$MONOLITH"/db/init/V*.sql; do
+    docker exec -i "$IDENTITY_DB" psql -q -v ON_ERROR_STOP=1 -U amaranta -d amaranta < "$sql" > /dev/null
+  done
+  docker run -d --name "$IDENTITY" --network "$NET" --network-alias identity -e NODE_ENV=production -e PORT=8080 \
+    -e "DATABASE_URL=postgresql://amaranta:$IDENTITY_PW@identity-db:5432/amaranta" -e "JWT_PRIVATE_KEY=$PRIVATE" -e "JWT_PUBLIC_KEY=$PUBLIC" \
+    -e JWT_EXPIRES_IN=3600s identity:real > /dev/null
   docker run -d --name "$GATEWAY" --network "$NET" --network-alias gateway -p 8000:8000 api-gateway:real > /dev/null
   docker run -d --name "$CATALOG_PORTAL" --network "$NET" --network-alias catalog-portal -p 4201:4201 catalog-portal:real > /dev/null
   docker run -d --name "$SALES_PORTAL" --network "$NET" --network-alias sales-portal -p 4202:4202 sales-portal:real > /dev/null
   docker run -d --name "$SHELL_C" --network "$NET" --network-alias shell -p 4200:4200 shell:real > /dev/null
   start_sales_api "$OPEN_CLOCK"
+  for _ in $(seq 1 60); do [ "$(http_code http://identity:8080/health)" = "200" ] && break; sleep 1; done
+  [ "$(http_code http://identity:8080/health)" = "200" ] || { echo "FAIL: identity did not come up" >&2; docker logs --tail 20 "$IDENTITY" >&2; exit 1; }
+  # A staff account cannot be created from the web (self-service is always CUSTOMER): this administrator is registered and then
+  # promoted in the database of identity, here and nowhere else. Its password is random and only the person running this sees it.
+  local DEMO_PW; DEMO_PW="Amaranta-$(openssl rand -hex 4)"
+  printf '%s' "$DEMO_ADMIN" > "$STATE/admin.email"; printf '%s' "$DEMO_PW" > "$STATE/admin.password"
+  curl_net -o /dev/null -X POST -H 'Content-Type: application/json' -d '{"fullName":"Administrador Demo","email":"'"$DEMO_ADMIN"'","password":"'"$DEMO_PW"'"}' http://identity:8080/auth/register
+  docker exec "$IDENTITY_DB" psql -q -U amaranta -d amaranta -c "UPDATE identity.users SET role = 'ADMIN' WHERE email = '$DEMO_ADMIN'" > /dev/null
 
   for _ in $(seq 1 60); do [ "$(http_code http://gateway:8000/api/v1/products)" = "200" ] && break; sleep 1; done
   [ "$(http_code http://gateway:8000/api/v1/products)" = "200" ] || { echo "FAIL: the chain did not come up" >&2; docker logs --tail 20 "$CATALOG" >&2; exit 1; }
   echo
   echo "UP. Open the shell:   http://localhost:4200/catalog        (the shop's clock: $OPEN_CLOCK, open)"
   echo "    the gateway:      http://localhost:8000/api/v1/products"
+  echo "    sign in:          http://localhost:4200/sign-in   (create an account there: it is always a customer)"
+  echo "    administrator:    $DEMO_ADMIN   password in $STATE/admin.password"
   echo "    test tokens:      $STATE/admin.token and $STATE/customer.token (put one in sessionStorage['amaranta.session'])"
   echo "    shop closed:      bash scripts/e2e-real-stack.sh clock 2026-10-11T15:00:00Z   (a Sunday)"
   echo "    stop and clean:   bash scripts/e2e-real-stack.sh down"
@@ -194,6 +223,19 @@ check() {
   expect_body "a purchase on a Sunday is a 422 naming INV-ORDER-008" 'INV-ORDER-008' -X POST "${JSON[@]}" -H 'Idempotency-Key: e2e-sunday-0001' -d "$BODY" "$G/api/v1/orders"
   [ "$(stock)" = "21" ] && ok "...and the stock did not move" || bad "...but the stock moved to $(stock)"
   start_sales_api "$OPEN_CLOCK"
+
+  echo "signing in and creating an account, through the gateway"
+  local ADMIN_PW; ADMIN_PW="$(cat "$STATE/admin.password")"
+  expect_body "the demo administrator signs in and gets the ADMIN role" '"role":"ADMIN"' -X POST "${JSON[@]}" -d '{"email":"'"$DEMO_ADMIN"'","password":"'"$ADMIN_PW"'"}' "$G/api/v1/auth/login"
+  expect_code "a wrong password is refused (400)" 400 -X POST "${JSON[@]}" -d '{"email":"'"$DEMO_ADMIN"'","password":"nope-nope-nope"}' "$G/api/v1/auth/login"
+  local NEW; NEW="e2e-$(openssl rand -hex 3)@example.com"
+  expect_body "a new account is a CUSTOMER" '"role":"CUSTOMER"' -X POST "${JSON[@]}" -d '{"fullName":"Cliente Prueba","email":"'"$NEW"'","password":"clave-segura-1"}' "$G/api/v1/auth/register"
+  expect_body "...even when the request asks for ADMIN" '"role":"CUSTOMER"' -X POST "${JSON[@]}" -d '{"fullName":"Cliente Dos","email":"2'"$NEW"'","password":"clave-segura-1","role":"ADMIN"}' "$G/api/v1/auth/register"
+  expect_code "...and that email cannot be registered twice (400)" 400 -X POST "${JSON[@]}" -d '{"fullName":"Cliente Prueba","email":"'"$NEW"'","password":"clave-segura-1"}' "$G/api/v1/auth/register"
+  expect_code "the staff list of identity is not published (404)" 404 -H "Authorization: Bearer $CUSTOMER_T" "$G/api/v1/auth/staff"
+  local ADMIN_T
+  ADMIN_T="$(curl_net -X POST "${JSON[@]}" -d '{"email":"'"$DEMO_ADMIN"'","password":"'"$ADMIN_PW"'"}' "$G/api/v1/auth/login" | grep -o '"accessToken":"[^"]*"' | cut -d'"' -f4)"
+  expect_code "the token identity issued is accepted by catalog-api for the administration (200)" 200 -H "Authorization: Bearer $ADMIN_T" "$G/api/v1/admin/products"
 
   echo "the correlation id of a purchase, from the browser to both services (norm 5.3.9)"
   curl_net -o /dev/null -X POST "${JSON[@]}" -H 'X-Correlation-Id: e2e-trace-buy' -H 'Idempotency-Key: e2e-trace-0001' -d "${BODY/\"quantity\":2/\"quantity\":1}" "$G/api/v1/orders"
