@@ -1,5 +1,5 @@
 import { apiClient, type ShellRequestOptions } from 'shell/apiClient';
-import type { Order, Page } from '../model/order';
+import type { AdminOrder, Order, Page } from '../model/order';
 
 /** What the service takes to place an order (`POST /api/v1/orders`). The customer is the token's, never a field. */
 export interface CheckoutRequest {
@@ -36,5 +36,11 @@ export interface PageRequest {
 /** My orders, newest first. It needs a signed-in person: the gateway refuses a request with no credential. */
 export async function listMyOrders({ page, limit }: PageRequest, signal?: AbortSignal): Promise<Page<Order>> {
   const response = await apiClient.get<Page<Order>>(`/api/v1/orders?page=${page}&limit=${limit}`, signal ? { signal } : {});
+  return response.data;
+}
+
+/** Every order of the shop, newest first. Only the administrator gets it: the service answers 403 to anyone else. */
+export async function listAllOrders({ page, limit }: PageRequest, signal?: AbortSignal): Promise<Page<AdminOrder>> {
+  const response = await apiClient.get<Page<AdminOrder>>(`/api/v1/admin/orders?page=${page}&limit=${limit}`, signal ? { signal } : {});
   return response.data;
 }
