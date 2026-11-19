@@ -5,6 +5,9 @@ const STATUS: Record<string, string> = { PENDING: 'Pendiente de pago', PAID: 'Pa
 const FULFILLMENT: Record<string, string> = { PICKUP: 'Recoger en tienda', DELIVERY: 'A domicilio' };
 const PAYMENT: Record<string, string> = { CASH: 'Efectivo', CARD: 'Tarjeta', TRANSFER: 'Transferencia' };
 
+const CHANNEL: Record<string, string> = { ONLINE: 'Web', IN_STORE: 'Mostrador' };
+
 export const statusLabel = (value: string): string => STATUS[value] ?? value;
 export const fulfillmentLabel = (value: string): string => FULFILLMENT[value] ?? value;
 export const paymentLabel = (value: string): string => PAYMENT[value] ?? value;
+export const channelLabel = (value: string): string => CHANNEL[value] ?? value;

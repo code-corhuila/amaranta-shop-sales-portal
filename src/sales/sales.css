@@ -507,3 +507,52 @@
     text-align: left;
   }
 }
+
+/* ---- the orders of the shop, for the administrator ---------------------------------------------------------------- */
+.table-wrap {
+  overflow-x: auto;
+  margin-bottom: 1rem;
+  border-radius: var(--radius-xl2);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-wrap caption {
+  padding: 0.875rem 1rem;
+  text-align: left;
+  font-family: var(--font-family-display);
+  font-weight: 600;
+  color: var(--brand-700);
+}
+
+.table-wrap th,
+.table-wrap td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  vertical-align: top;
+  border-top: 1px solid var(--color-cream-100);
+}
+
+.table-wrap thead th {
+  background: var(--brand-50);
+  color: var(--brand-700);
+  font-size: 0.875rem;
+}
+
+.table-wrap tbody tr:hover {
+  background: var(--color-cream-50);
+}
+
+.table-wrap .cell-number {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.table-wrap .chip + .chip {
+  margin-left: 0.25rem;
+}

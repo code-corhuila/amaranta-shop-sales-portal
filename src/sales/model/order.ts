@@ -30,6 +30,14 @@ export interface Order {
   readonly deliveryAddress?: string;
 }
 
+/** What the administration sees of an order: the same, plus WHO placed it. Sales knows a customer by id only. */
+export interface AdminOrder extends Order {
+  readonly units: number;
+  readonly customerId: string;
+  /** False for a visitor who bought without an account and for a sale at the counter: then `contactName` is the only name there is. */
+  readonly registeredCustomer: boolean;
+}
+
 export interface PageMeta {
   readonly page: number;
   readonly limit: number;
