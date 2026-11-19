@@ -45,6 +45,7 @@ export function AdminOrdersPage() {
                   <th scope="col">Pedido</th>
                   <th scope="col">Fecha</th>
                   <th scope="col">Quién compró</th>
+                  <th scope="col">Productos</th>
                   <th scope="col">Entrega y pago</th>
                   <th scope="col">Estado</th>
                   <th scope="col" className="cell-number">
@@ -68,6 +69,13 @@ export function AdminOrdersPage() {
                         <span className="chip chip-category">{order.channel === 'IN_STORE' ? 'Venta en mostrador' : 'Invitado, sin cuenta'}</span>
                       )}
                       <span className="chip chip-category">{channelLabel(order.channel)}</span>
+                    </td>
+                    <td>
+                      <ul className="order-lines">
+                        {order.items.map((line) => (
+                          <li key={line.productId}>{`${line.productName} × ${line.quantity}`}</li>
+                        ))}
+                      </ul>
                     </td>
                     <td>
                       {fulfillmentLabel(order.fulfillmentMethod)}

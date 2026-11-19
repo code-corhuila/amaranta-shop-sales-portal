@@ -73,6 +73,24 @@ describe('the orders of the shop, for the administrator', () => {
     expect(within(rows[0]!).getByText('$ 386.500')).toBeInTheDocument();
   });
 
+  it('says what each order asked for: every product, with how many', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(
+      page([
+        order('aaaaaaaa', {
+          items: [
+            { productId: 'p-1', productName: 'Croquetas Adulto', unitPrice: 189_000, quantity: 2, subtotal: 378_000 },
+            { productId: 'p-2', productName: 'Juguete para gato', unitPrice: 8_500, quantity: 1, subtotal: 8_500 },
+          ],
+        }),
+      ]),
+    );
+    renderAt();
+
+    const row = within(await screen.findByRole('table')).getAllByRole('row')[1]!;
+    expect(within(row).getByText('Croquetas Adulto × 2')).toBeInTheDocument();
+    expect(within(row).getByText('Juguete para gato × 1')).toBeInTheDocument();
+  });
+
   it('asks the next page when the administrator moves on', async () => {
     vi.mocked(apiClient.get).mockResolvedValue(page([order('aaaaaaaa')], { total: 30, totalPages: 2 }));
     renderAt();
